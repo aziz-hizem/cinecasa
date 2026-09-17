@@ -1,0 +1,24 @@
+node_modules
+dist
+dist-electron
+release
+.vite
+.DS_Store
+*.log
+.env
+.env.local
+
+# Personal files kept out of the repository
+CAHIER_DE_CHARGES.md
+launch.vbs
+_archive/
+
+# Editors / OS
+.vscode/
+.idea/
+.claude/
+desktop.ini
+Thumbs.db
+
+# Old icon, kept locally (unused, third-party artwork)
+assets/icons/suicide_squad.ico

@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Cinecasa">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ff3b43"/>
+      <stop offset="0.55" stop-color="#e50914"/>
+      <stop offset="1" stop-color="#8f050c"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.64" r="0.5">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="512" height="512" rx="116" fill="url(#bg)"/>
+  <rect width="512" height="512" rx="116" fill="url(#glow)"/>
+  <!-- roof drawn as a strip of film -->
+  <path d="M92 256 L256 110 L420 256" fill="none" stroke="#ffffff" stroke-width="52" stroke-linecap="round" stroke-linejoin="round"/>
+  <g fill="#d10812">
+    <rect x="118.3" y="217.6" width="18" height="14" rx="3.5" transform="rotate(-41.7 127.3 224.6)"/>
+    <rect x="149.4" y="189.9" width="18" height="14" rx="3.5" transform="rotate(-41.7 158.4 196.9)"/>
+    <rect x="180.6" y="162.1" width="18" height="14" rx="3.5" transform="rotate(-41.7 189.6 169.1)"/>
+    <rect x="211.7" y="134.4" width="18" height="14" rx="3.5" transform="rotate(-41.7 220.7 141.4)"/>
+    <rect x="282.3" y="134.4" width="18" height="14" rx="3.5" transform="rotate(41.7 291.3 141.4)"/>
+    <rect x="313.4" y="162.1" width="18" height="14" rx="3.5" transform="rotate(41.7 322.4 169.1)"/>
+    <rect x="344.6" y="189.9" width="18" height="14" rx="3.5" transform="rotate(41.7 353.6 196.9)"/>
+    <rect x="375.7" y="217.6" width="18" height="14" rx="3.5" transform="rotate(41.7 384.7 224.6)"/>
+  </g>
+  <!-- walls -->
+  <path d="M146 238 V382 Q146 402 166 402 H346 Q366 402 366 382 V238" fill="none" stroke="#ffffff" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- the door is a play button -->
+  <path d="M222 266 Q222 252 234 259 L316 305 Q328 312 316 319 L234 365 Q222 372 222 358 Z" fill="#ffffff"/>
+</svg>
