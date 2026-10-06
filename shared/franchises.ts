@@ -1,4 +1,4 @@
-import type { Movie, Show, SpecialKind } from '@shared/types'
+import type { Movie, Show, SpecialKind } from './types'
 
 /**
  * A hardcoded roster of the titles that make up a franchise.

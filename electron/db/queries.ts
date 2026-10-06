@@ -228,15 +228,37 @@ export const settingsRepo = {
         map.get('pollingIntervalMs') ?? DEFAULT_SETTINGS.pollingIntervalMs
       ),
       themeAccent: map.get('themeAccent') ?? DEFAULT_SETTINGS.themeAccent,
+      remoteEnabled: parseBool(map.get('remoteEnabled'), DEFAULT_SETTINGS.remoteEnabled),
+      remotePort: Number(map.get('remotePort') ?? DEFAULT_SETTINGS.remotePort),
+      closeToTray: parseBool(map.get('closeToTray'), DEFAULT_SETTINGS.closeToTray),
+      launchAtLogin: parseBool(map.get('launchAtLogin'), DEFAULT_SETTINGS.launchAtLogin),
     }
   },
 
-  set(key: keyof AppSettings, value: string | number): void {
+  set(key: keyof AppSettings, value: string | number | boolean): void {
+    settingsRepo.setRaw(key, typeof value === 'boolean' ? (value ? '1' : '0') : String(value))
+  },
+
+  /** Read a value that isn't part of AppSettings (e.g. the tablet auth token). */
+  getRaw(key: string): string | null {
+    const db = getDb()
+    const row = db.prepare('SELECT value FROM settings WHERE key = ?').get(key) as
+      | { value: string }
+      | undefined
+    return row?.value ?? null
+  },
+
+  setRaw(key: string, value: string): void {
     const db = getDb()
     db.prepare(
       'INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value'
-    ).run(key, String(value))
+    ).run(key, value)
   },
+}
+
+function parseBool(v: string | undefined, fallback: boolean): boolean {
+  if (v === undefined) return fallback
+  return v === '1' || v === 'true'
 }
 
 // ─── Library roots ───────────────────────────────────────────────────────────
@@ -717,6 +739,12 @@ export const episodesRepo = {
         d.filePath, d.fileSize, now
       )
     return { id: Number(result.lastInsertRowid), isNew: true }
+  },
+
+  getById(id: number): Episode | null {
+    const db = getDb()
+    const row = db.prepare('SELECT * FROM episodes WHERE id = ?').get(id) as EpisodeRow | undefined
+    return row ? rowToEpisode(row) : null
   },
 
   listByShow(showId: number): Episode[] {

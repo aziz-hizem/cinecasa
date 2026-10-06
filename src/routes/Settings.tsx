@@ -16,10 +16,13 @@ import {
   Sparkles,
   Wifi,
   WifiOff,
+  Tablet,
+  Unlink,
 } from 'lucide-react'
 import type {
   AppSettings,
   LibraryRoot,
+  RemoteServerInfo,
   LibraryRootType,
   ScanMode,
   ScanProgressEvent,
@@ -85,6 +88,7 @@ export default function Settings() {
       ['mpcHcPort', settings.mpcHcPort],
       ['pollingIntervalMs', settings.pollingIntervalMs],
       ['themeAccent', settings.themeAccent],
+      ['remotePort', settings.remotePort],
     ]
     for (const [k, v] of entries) {
       const res = await window.api.settings.set(k, v)
@@ -618,6 +622,8 @@ export default function Settings() {
         </div>
       </Section>
 
+      <TabletStreamingSection settings={settings} setSettings={setSettings} />
+
       {/* Theme */}
       <Section title="Theme" description="Accent color used for buttons and highlights.">
         <Field label="Accent Color">
@@ -653,6 +659,169 @@ export default function Settings() {
         </button>
       </div>
     </div>
+  )
+}
+
+/**
+ * Tablet streaming: lets the Cinecasa Android app browse and stream this
+ * library over the home Wi-Fi. The toggles apply immediately; the port is
+ * saved with the rest of the settings.
+ */
+function TabletStreamingSection({
+  settings,
+  setSettings,
+}: {
+  settings: AppSettings
+  setSettings: React.Dispatch<React.SetStateAction<AppSettings>>
+}) {
+  const [info, setInfo] = useState<RemoteServerInfo | null>(null)
+
+  async function refresh() {
+    const res = await window.api.remote.getInfo()
+    if (res.ok && res.data) setInfo(res.data)
+  }
+
+  useEffect(() => {
+    void refresh()
+    // Pick up IP changes and the code rotating after wrong attempts.
+    const timer = window.setInterval(() => void refresh(), 5000)
+    return () => window.clearInterval(timer)
+  }, [])
+
+  async function setToggle(key: 'remoteEnabled' | 'closeToTray' | 'launchAtLogin', value: boolean) {
+    setSettings((s) => ({ ...s, [key]: value }))
+    await window.api.settings.set(key, value)
+    void refresh()
+  }
+
+  async function handleNewCode() {
+    await window.api.remote.newPairingCode()
+    void refresh()
+  }
+
+  async function handleUnpairAll() {
+    if (!window.confirm('Unpair every tablet? Each one will need the new pairing code to connect again.')) return
+    await window.api.remote.unpairAll()
+    void refresh()
+  }
+
+  return (
+    <Section
+      title="Tablet Streaming"
+      description="Watch this library on your Android tablet over home Wi-Fi. Progress is shared, so you can stop on one screen and resume on the other."
+    >
+      <div className="space-y-3">
+        <ToggleRow
+          label="Allow the Cinecasa tablet app to stream from this PC"
+          checked={settings.remoteEnabled}
+          onChange={(v) => void setToggle('remoteEnabled', v)}
+        />
+        <ToggleRow
+          label="Keep running in the tray when the window is closed"
+          checked={settings.closeToTray}
+          onChange={(v) => void setToggle('closeToTray', v)}
+        />
+        <ToggleRow
+          label="Start with Windows (in the tray)"
+          checked={settings.launchAtLogin}
+          onChange={(v) => void setToggle('launchAtLogin', v)}
+        />
+      </div>
+
+      {settings.remoteEnabled && (
+        <div className="mt-5 grid grid-cols-2 gap-4">
+          <div className="rounded-card bg-bg border border-border-subtle p-4">
+            <span className="flex items-center gap-2 text-xs font-medium text-text-secondary uppercase tracking-wide mb-2">
+              <Tablet className="w-4 h-4" />
+              Pairing Code
+            </span>
+            <div className="text-3xl font-bold tracking-[0.3em] tabular-nums">
+              {info?.pairingCode ?? '······'}
+            </div>
+            <button type="button" onClick={handleNewCode} className="btn-secondary text-xs mt-3">
+              <RefreshCw className="w-3.5 h-3.5" />
+              New code
+            </button>
+          </div>
+
+          <div className="rounded-card bg-bg border border-border-subtle p-4 text-sm">
+            <span className="flex items-center gap-2 text-xs font-medium text-text-secondary uppercase tracking-wide mb-2">
+              {info?.running ? <Wifi className="w-4 h-4 text-emerald-400" /> : <WifiOff className="w-4 h-4 text-red-400" />}
+              Status
+            </span>
+            {info?.running ? (
+              <>
+                <p className="text-emerald-400 mb-1">Running</p>
+                <p className="text-text-secondary">
+                  The tablet finds this PC by itself. If it doesn&apos;t, enter:
+                </p>
+                <ul className="mt-1 font-mono text-text-primary">
+                  {info.addresses.map((a) => (
+                    <li key={a}>
+                      {a}:{info.port}
+                    </li>
+                  ))}
+                </ul>
+              </>
+            ) : (
+              <p className="text-red-400">{info?.error ?? 'Not running'}</p>
+            )}
+          </div>
+
+          <Field label="Port">
+            <input
+              type="number"
+              className="input"
+              title="Tablet streaming port"
+              value={settings.remotePort}
+              min={1024}
+              max={65535}
+              onChange={(e) =>
+                setSettings((s) => ({ ...s, remotePort: Number(e.target.value) || 8642 }))
+              }
+            />
+          </Field>
+
+          <div className="flex items-end">
+            <button type="button" onClick={handleUnpairAll} className="btn-secondary text-sm">
+              <Unlink className="w-4 h-4" />
+              Unpair all tablets
+            </button>
+          </div>
+
+          <p className="col-span-2 text-xs text-text-muted">
+            The first time, Windows Firewall asks whether Cinecasa may use the network.
+            Allow it on <span className="text-text-secondary">Private networks</span>.
+          </p>
+        </div>
+      )}
+    </Section>
+  )
+}
+
+function ToggleRow({
+  label,
+  checked,
+  onChange,
+}: {
+  label: string
+  checked: boolean
+  onChange: (v: boolean) => void
+}) {
+  return (
+    <label className="flex items-center justify-between gap-4 cursor-pointer select-none">
+      <span className="text-sm">{label}</span>
+      <span className="relative inline-block w-11 h-6 flex-shrink-0">
+        <input
+          type="checkbox"
+          checked={checked}
+          onChange={(e) => onChange(e.target.checked)}
+          className="peer sr-only"
+        />
+        <span className="absolute inset-0 rounded-full bg-bg-card ring-1 ring-inset ring-border-subtle peer-checked:bg-accent peer-checked:ring-0 transition-colors duration-300 pointer-events-none" />
+        <span className="absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform duration-300 peer-checked:translate-x-5 pointer-events-none" />
+      </span>
+    </label>
   )
 }
 

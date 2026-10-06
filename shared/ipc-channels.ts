@@ -8,6 +8,11 @@ export const IPC = {
   SETTINGS_OPEN_CACHE_DIR: 'settings:open-cache-dir',
   SETTINGS_CLEAR_CACHE: 'settings:clear-cache',
 
+  // Tablet streaming server
+  REMOTE_GET_INFO: 'remote:get-info',
+  REMOTE_NEW_PAIRING_CODE: 'remote:new-pairing-code',
+  REMOTE_UNPAIR_ALL: 'remote:unpair-all',
+
   // Library roots
   LIBRARY_ROOTS_LIST: 'library-roots:list',
   LIBRARY_ROOTS_ADD: 'library-roots:add',

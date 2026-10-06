@@ -4,6 +4,7 @@ import { IPC } from '@shared/ipc-channels'
 import type { AppSettings, IpcResult, LibraryRoot, LibraryRootType, SpecialKind } from '@shared/types'
 import { libraryRootsRepo, settingsRepo } from '../db/queries'
 import { clearImageCache, getImageCacheDir } from '../services/imageCache'
+import { startRemoteServer } from '../server/httpServer'
 
 function ok<T>(data: T): IpcResult<T> {
   return { ok: true, data }
@@ -24,9 +25,18 @@ export function registerSettingsIpc(): void {
 
   ipcMain.handle(
     IPC.SETTINGS_SET,
-    (_evt, key: keyof AppSettings, value: string | number) => {
+    async (_evt, key: keyof AppSettings, value: string | number | boolean) => {
       try {
+        const before = settingsRepo.getAll()[key]
         settingsRepo.set(key, value)
+        // Restart only on a real change — Save Settings writes every field.
+        if ((key === 'remoteEnabled' || key === 'remotePort') && settingsRepo.getAll()[key] !== before) {
+          await startRemoteServer()
+        }
+        if (key === 'launchAtLogin') {
+          // Starts hidden in the tray so the tablet can stream as soon as the PC is on.
+          app.setLoginItemSettings({ openAtLogin: value === true, args: ['--hidden'] })
+        }
         return ok(undefined)
       } catch (e) {
         return fail(e)

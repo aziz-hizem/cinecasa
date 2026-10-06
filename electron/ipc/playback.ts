@@ -6,11 +6,11 @@ import type {
   PlaybackLaunchParams,
   PlaybackProgressEvent,
   WatchProgress,
-  WatchState,
 } from '@shared/types'
 import { settingsRepo, watchProgressRepo, getNextEpisode, isSpecialShow, getEpisodeShowId, getRandomEpisodeForShow } from '../db/queries'
 import { launchMpcHc, killMpcHc, pollMpcHc } from '../services/mpcHc'
 import type { MpcHcStatus } from '../services/mpcHc'
+import { computeState } from '../services/progress'
 
 // ─── Module-level playback state ─────────────────────────────────────────────
 
@@ -42,14 +42,6 @@ function clearPolling(): void {
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-
-function computeState(positionMs: number, durationMs: number): WatchState {
-  if (durationMs <= 0) return 'in_progress'
-  if (positionMs / durationMs >= 0.95) return 'watched'
-  return 'in_progress'
-  // NOTE: we never downgrade to 'unwatched' here — once play is pressed the
-  // item is in_progress regardless of position (including position=0).
-}
 
 function saveProgress(item: ActiveItem, status: MpcHcStatus): void {
   const state = computeState(status.positionMs, status.durationMs)

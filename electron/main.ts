@@ -1,4 +1,4 @@
-import { app, BrowserWindow, protocol, shell } from 'electron'
+import { app, BrowserWindow, Menu, nativeImage, protocol, shell, Tray } from 'electron'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -7,6 +7,9 @@ import { registerLibraryIpc } from './ipc/library'
 import { registerMetadataIpc } from './ipc/metadata'
 import { registerPlaybackIpc } from './ipc/playback'
 import { registerSettingsIpc } from './ipc/settings'
+import { registerRemoteIpc } from './ipc/remote'
+import { settingsRepo } from './db/queries'
+import { getRemoteInfo, startRemoteServer, stopRemoteServer } from './server/httpServer'
 import {
   getImageCacheDir,
   ensureCachedKey,
@@ -35,6 +38,19 @@ protocol.registerSchemesAsPrivileged([
 ])
 
 let mainWindow: BrowserWindow | null = null
+let tray: Tray | null = null
+/** Set once a real quit starts, so closing the window no longer hides to tray. */
+let isQuitting = false
+/** Launched by "Start with Windows": stay in the tray and just serve the tablet. */
+const startHidden = process.argv.includes('--hidden')
+
+// One instance only — a second one would fight over the tablet server's port.
+const hasInstanceLock = app.requestSingleInstanceLock()
+if (!hasInstanceLock) {
+  app.quit()
+} else {
+  app.on('second-instance', () => showMainWindow())
+}
 
 /**
  * The app was previously called HizemTV and stored its data in %AppData%/hizem-tv.
@@ -75,12 +91,28 @@ function createWindow(): void {
       height: 36,
     },
     autoHideMenuBar: true,
+    show: !startHidden,
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false,
     },
+  })
+
+  // With tablet streaming on, closing the window keeps Cinecasa running in the
+  // tray so the tablet can still reach the library.
+  mainWindow.on('close', (e) => {
+    if (isQuitting) return
+    const { closeToTray, remoteEnabled } = settingsRepo.getAll()
+    if (closeToTray && remoteEnabled) {
+      e.preventDefault()
+      mainWindow?.hide()
+      createTray()
+    }
+  })
+  mainWindow.on('closed', () => {
+    mainWindow = null
   })
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
@@ -94,6 +126,52 @@ function createWindow(): void {
   } else {
     void mainWindow.loadFile(path.join(RENDERER_DIST, 'index.html'))
   }
+}
+
+function showMainWindow(): void {
+  if (!mainWindow) {
+    createWindow()
+  }
+  if (mainWindow) {
+    if (mainWindow.isMinimized()) mainWindow.restore()
+    mainWindow.show()
+    mainWindow.focus()
+  }
+}
+
+function trayIconPath(): string {
+  const file = process.platform === 'win32' ? 'cinecasa.ico' : 'cinecasa.png'
+  return path.join(process.env.APP_ROOT ?? path.join(__dirname, '..'), 'assets', 'icons', file)
+}
+
+function createTray(): void {
+  if (tray) {
+    tray.setContextMenu(buildTrayMenu())
+    return
+  }
+  tray = new Tray(nativeImage.createFromPath(trayIconPath()))
+  tray.setToolTip('Cinecasa')
+  tray.setContextMenu(buildTrayMenu())
+  tray.on('click', () => showMainWindow())
+}
+
+function buildTrayMenu(): Menu {
+  const info = getRemoteInfo()
+  const status = info.running
+    ? `Tablet streaming on (port ${info.port})`
+    : 'Tablet streaming off'
+  return Menu.buildFromTemplate([
+    { label: 'Open Cinecasa', click: () => showMainWindow() },
+    { label: status, enabled: false },
+    { type: 'separator' },
+    {
+      label: 'Quit',
+      click: () => {
+        isQuitting = true
+        app.quit()
+      },
+    },
+  ])
 }
 
 function registerImageProtocol(): void {
@@ -130,6 +208,8 @@ function registerImageProtocol(): void {
 }
 
 app.whenReady().then(() => {
+  if (!hasInstanceLock) return
+
   // Initialize DB before any IPC handler can be invoked.
   getDb()
 
@@ -138,12 +218,15 @@ app.whenReady().then(() => {
   registerLibraryIpc()
   registerPlaybackIpc()
   registerMetadataIpc()
+  registerRemoteIpc()
+
+  void startRemoteServer().then(() => {
+    if (startHidden) createTray()
+  })
 
   createWindow()
 
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow()
-  })
+  app.on('activate', () => showMainWindow())
 })
 
 app.on('window-all-closed', () => {
@@ -154,5 +237,9 @@ app.on('window-all-closed', () => {
 })
 
 app.on('before-quit', () => {
+  isQuitting = true
+  void stopRemoteServer()
+  tray?.destroy()
+  tray = null
   closeDb()
 })

@@ -21,6 +21,12 @@ export interface AppSettings {
   mpcHcPort: number
   pollingIntervalMs: number
   themeAccent: string
+  /** Serve the library to the Android tablet app over the local network. */
+  remoteEnabled: boolean
+  remotePort: number
+  /** Closing the window hides Cinecasa to the tray so tablet streaming keeps running. */
+  closeToTray: boolean
+  launchAtLogin: boolean
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -29,6 +35,21 @@ export const DEFAULT_SETTINGS: AppSettings = {
   mpcHcPort: 13579,
   pollingIntervalMs: 5000,
   themeAccent: '#e50914',
+  remoteEnabled: true,
+  remotePort: 8642,
+  closeToTray: true,
+  launchAtLogin: false,
+}
+
+/** Status of the tablet streaming server, shown in Settings. */
+export interface RemoteServerInfo {
+  running: boolean
+  port: number
+  /** LAN IPv4 addresses the tablet can reach this PC on. */
+  addresses: string[]
+  /** Six-digit code the tablet enters once to pair. */
+  pairingCode: string
+  error: string | null
 }
 
 export type WatchState = 'unwatched' | 'in_progress' | 'watched'

@@ -14,6 +14,7 @@ import type {
   Movie,
   PlaybackLaunchParams,
   PlaybackProgressEvent,
+  RemoteServerInfo,
   ScanProgressEvent,
   ScanResult,
   ScanMode,
@@ -34,7 +35,7 @@ const api = {
       ipcRenderer.invoke(IPC.SETTINGS_GET_ALL),
     set: (
       key: keyof AppSettings,
-      value: string | number
+      value: string | number | boolean
     ): Promise<IpcResult<void>> => ipcRenderer.invoke(IPC.SETTINGS_SET, key, value),
     browseFolder: (): Promise<IpcResult<string | null>> =>
       ipcRenderer.invoke(IPC.SETTINGS_BROWSE_FOLDER),
@@ -46,6 +47,14 @@ const api = {
       ipcRenderer.invoke(IPC.SETTINGS_OPEN_CACHE_DIR),
     clearCache: (): Promise<IpcResult<void>> =>
       ipcRenderer.invoke(IPC.SETTINGS_CLEAR_CACHE),
+  },
+  remote: {
+    getInfo: (): Promise<IpcResult<RemoteServerInfo>> =>
+      ipcRenderer.invoke(IPC.REMOTE_GET_INFO),
+    newPairingCode: (): Promise<IpcResult<string>> =>
+      ipcRenderer.invoke(IPC.REMOTE_NEW_PAIRING_CODE),
+    unpairAll: (): Promise<IpcResult<void>> =>
+      ipcRenderer.invoke(IPC.REMOTE_UNPAIR_ALL),
   },
   libraryRoots: {
     list: (): Promise<IpcResult<LibraryRoot[]>> =>

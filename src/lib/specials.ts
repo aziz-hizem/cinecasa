@@ -1,5 +1,5 @@
 import type { LibraryRoot, Movie, Show, SpecialKind } from '@shared/types'
-import { FRANCHISES, movieInFranchise, showInFranchise } from './franchises'
+import { moviesForSpecial, showsForSpecial } from '@shared/specialMembership'
 
 import marvelLogo from '../../assets/Marvel_Logo.svg.webp'
 import marvelBg from '../../assets/marvel_background_tab.webp'
@@ -11,6 +11,8 @@ import spidermanLogo from '../../assets/spiderman_logo.png'
 import spidermanBg from '../../assets/spiderman_background.jpg'
 import piratesLogo from '../../assets/pirates_of_the_caribbean_logo.png'
 import piratesBg from '../../assets/pirates_of_the_caribbean_background.jpg'
+
+export { moviesForSpecial, showsForSpecial, specialRootPaths } from '@shared/specialMembership'
 
 export interface SpecialDef {
   kind: SpecialKind
@@ -105,53 +107,6 @@ export const SPECIALS: SpecialDef[] = [
 export function getSpecial(kind: string | null | undefined): SpecialDef | undefined {
   if (!kind) return undefined
   return SPECIALS.find((s) => s.kind === kind)
-}
-
-const norm = (p: string) => p.replace(/\\/g, '/').toLowerCase()
-
-/** Root paths registered under a given special kind, normalised for comparison. */
-export function specialRootPaths(roots: LibraryRoot[], kind: SpecialKind): string[] {
-  return roots.filter((r) => r.specialKind === kind).map((r) => norm(r.path))
-}
-
-/**
- * Movies belonging to a special: anything matched by its franchise manifest,
- * plus anything sitting under a folder the user registered for it.
- */
-export function moviesForSpecial(
-  movies: Movie[],
-  roots: LibraryRoot[],
-  kind: SpecialKind
-): Movie[] {
-  const paths = specialRootPaths(roots, kind)
-  const manifest = FRANCHISES[kind]
-  if (paths.length === 0 && !manifest) return []
-  return movies.filter((m) => {
-    if (manifest && movieInFranchise(m, manifest)) return true
-    if (paths.length === 0) return false
-    const fp = norm(m.filePath)
-    return paths.some((p) => fp.startsWith(p))
-  })
-}
-
-/**
- * Shows belonging to a special: anything matched by its franchise manifest,
- * plus anything sitting under a folder the user registered for it.
- */
-export function showsForSpecial(
-  shows: Show[],
-  roots: LibraryRoot[],
-  kind: SpecialKind
-): Show[] {
-  const paths = specialRootPaths(roots, kind)
-  const manifest = FRANCHISES[kind]
-  if (paths.length === 0 && !manifest) return []
-  return shows.filter((s) => {
-    if (manifest && showInFranchise(s, manifest)) return true
-    if (paths.length === 0) return false
-    const fp = norm(s.folderPath)
-    return paths.some((p) => fp.startsWith(p))
-  })
 }
 
 /**

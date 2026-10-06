@@ -15,7 +15,8 @@
     "postinstall": "electron-builder install-app-deps"
   },
   "dependencies": {
-    "better-sqlite3": "^11.5.0"
+    "better-sqlite3": "^11.5.0",
+    "bonjour-service": "^1.4.4"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.12",
@@ -46,7 +47,8 @@
     },
     "files": [
       "dist",
-      "dist-electron"
+      "dist-electron",
+      "assets/icons/*"
     ],
     "win": {
       "target": [
