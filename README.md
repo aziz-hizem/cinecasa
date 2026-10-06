@@ -10,6 +10,8 @@
 
 Cinecasa is a Windows desktop app that turns local video folders into a streaming-service-style library, with artwork, descriptions, ratings, cast and episode details. Playback happens in **MPC-HC**: Cinecasa launches the player, follows your progress while you watch, and brings you back to the exact second you stopped.
 
+There is also an **Android tablet app** ([`android/`](android/README.md)) that streams the same library from your PC over home Wi-Fi and shares your watch progress with the desktop.
+
 ![Home screen](docs/screenshots/home.jpg)
 
 ## Features
@@ -22,6 +24,7 @@ Cinecasa is a Windows desktop app that turns local video folders into a streamin
 - **Specials**: themed hubs with their own artwork and ordering (Marvel, Spider-Man, Pirates of the Caribbean, the Oscars ceremonies, and Tom & Jerry with a random-episode mode)
 - **Manual control**: fix a wrong match, edit episode metadata and lock it so rescans don't overwrite it
 - **Search** across the whole library
+- **Tablet app**: browse and stream the library on an Android tablet over home Wi-Fi, with progress shared between the PC and the tablet
 
 | Show page | Movies |
 |---|---|
@@ -50,6 +53,7 @@ Cinecasa is a Windows desktop app that turns local video folders into a streamin
 
 - **Scanning**: file and folder names are cleaned of release tags (resolution, codec, source) and parsed into a movie title and year, or a show, season and episode (including multi-part episodes).
 - **Metadata**: matched on TMDB, stored in SQLite with `better-sqlite3`, and images are downloaded once and served to the UI through a custom `cinecasa-img://` protocol.
+- **Tablet streaming**: a small HTTP server in the main process (`electron/server/`) serves the library as JSON, streams files with HTTP Range requests so the tablet can seek, and saves the tablet's progress into the same database. The tablet finds the PC over mDNS (`_cinecasa._tcp`) and pairs once with a six-digit code shown in Settings.
 - **Playback tracking**: before launching MPC-HC, Cinecasa picks a free port and temporarily points MPC-HC's web interface at it (in its `.ini` file or the registry), then starts the file at the saved position. While you watch, it polls MPC-HC's status page for the position and duration and saves progress. When the player closes, the final position decides whether the item is *in progress* or *watched*, and the next episode can start automatically.
 
 ## Tech stack
@@ -62,6 +66,7 @@ Cinecasa is a Windows desktop app that turns local video folders into a streamin
 | Metadata | TMDB API |
 | Player | MPC-HC (web interface) |
 | Build | Vite, `vite-plugin-electron`, electron-builder |
+| Tablet app | Kotlin, Jetpack Compose, libVLC, OkHttp, Coil |
 
 ## Getting started
 
@@ -83,6 +88,10 @@ npm run dev
 
 In **Settings**, add your library folders (as Movies or TV Shows), paste your TMDB API key and check the path to `mpc-hc64.exe`, then run a scan.
 
+### Watch on an Android tablet
+
+In **Settings → Tablet Streaming**, check that streaming is on. Turn on **Start with Windows** if you want the library available whenever the PC is on. Then build and install the tablet app from [`android/`](android/README.md) and pair it with the code shown there.
+
 ### Build a Windows installer
 
 ```bash
@@ -98,14 +107,16 @@ The installer is written to `release/`.
 │   ├── main.ts            # Window, image protocol, startup
 │   ├── preload.ts         # Typed window.api bridge
 │   ├── db/                # SQLite schema, connection and queries
-│   ├── ipc/               # Library, metadata, playback and settings handlers
+│   ├── ipc/               # Library, metadata, playback, settings and tablet-server handlers
+│   ├── server/            # Tablet streaming server: HTTP API, file streaming, mDNS discovery
 │   └── services/          # Scanner, filename parser, TMDB client, image cache, MPC-HC control
-├── shared/                # Types and IPC channel names shared by both processes
+├── shared/                # Types, IPC channel names and Specials membership shared by both processes
 ├── src/                   # Renderer (React)
 │   ├── routes/            # Home, Movies, TV Shows, Specials, Search, details, Settings
 │   ├── components/        # Hero banner, rows, cards, metadata editors, navigation
 │   └── lib/               # Formatting, Specials and franchise definitions
-└── assets/                # App icon and Specials artwork
+├── assets/                # App icon and Specials artwork
+└── android/               # Android tablet app (Kotlin, Jetpack Compose, libVLC)
 ```
 
 ## Acknowledgments

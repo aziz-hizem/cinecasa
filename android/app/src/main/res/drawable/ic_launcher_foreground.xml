@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- assets/icons/cinecasa.svg: a house whose roof is a film strip and whose
+     door is a play button, scaled into the adaptive icon safe zone. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group
+        android:scaleX="0.16"
+        android:scaleY="0.16"
+        android:translateX="13"
+        android:translateY="13">
+        <path
+            android:pathData="M92,256 L256,110 L420,256"
+            android:strokeColor="#FFFFFF"
+            android:strokeWidth="52"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
+        <path
+            android:pathData="M146,238 V382 Q146,402 166,402 H346 Q366,402 366,382 V238"
+            android:strokeColor="#FFFFFF"
+            android:strokeWidth="34"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
+        <path
+            android:pathData="M222,266 Q222,252 234,259 L316,305 Q328,312 316,319 L234,365 Q222,372 222,358 Z"
+            android:fillColor="#FFFFFF" />
+    </group>
+</vector>

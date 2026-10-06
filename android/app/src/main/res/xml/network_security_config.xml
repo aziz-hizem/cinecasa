@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The PC is reached over plain HTTP on the home network (there's no
+     certificate for a LAN address); pairing tokens keep other devices out. -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>
